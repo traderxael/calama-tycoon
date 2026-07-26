@@ -2,36 +2,23 @@
   "name": "calama-tycoon",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
-      "Shared": {
-        "$path": "src/shared"
-      },
+      "Shared": { "$path": "src/shared" },
       "$ignoreUnknownInstances": true
     },
-
     "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      },
+      "Server": { "$path": "src/server" },
       "$ignoreUnknownInstances": true
     },
-
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
-        }
+        "Client": { "$path": "src/client" }
       },
       "$ignoreUnknownInstances": true
     },
-
     "Workspace": {
-      "$properties": {
-        "FilteringEnabled": true
-      }
+      "$properties": { "FilteringEnabled": true }
     },
-
     "Lighting": {
       "$properties": {
         "Ambient": [0, 0, 0],
@@ -42,11 +29,8 @@
         "GeographicLatitude": -22.46
       }
     },
-
     "SoundService": {
-      "$properties": {
-        "RespectFilteringEnabled": true
-      }
+      "$properties": { "RespectFilteringEnabled": true }
     }
   }
 }
