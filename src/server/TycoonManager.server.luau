@@ -101,15 +101,22 @@ Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, it
     if s.pesos < item.CostPesos then return end
     if s.ley < item.CostLey then return end
 
-    -- Validate proximity (for non-free items)
+    -- Validate proximity: find nearest owned pad
     if item.CostPesos > 0 or item.CostLey > 0 then
         local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if root then
-            local pad = workspace:FindFirstChild("PurchasePad")
-            if pad and pad:IsA("BasePart") then
-                if (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
-                    return
+            local pads = workspace:FindFirstChild("TycoonPads")
+            if pads then
+                local near = false
+                for _, pad in pads:GetChildren() do
+                    if pad:IsA("BasePart") and s.owned[pad.Name] then
+                        if (root.Position - pad.Position).Magnitude <= ECON.MAX_PURCHASE_DISTANCE then
+                            near = true
+                            break
+                        end
+                    end
                 end
+                if not near then return end
             end
         end
     end

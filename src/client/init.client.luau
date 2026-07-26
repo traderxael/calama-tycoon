@@ -57,10 +57,8 @@ local btnRefs = {}
 local yPos = 88
 
 local function getPhaseName(phase: number): string
-    for _, p in TycoonConfig.PHASES do
-        if p.Id == TycoonConfig.PHASES[phase].Id then
-            return TycoonConfig.PHASES[phase].Name
-        end
+    if phase <= #TycoonConfig.PHASES then
+        return "Fase " .. tostring(phase) .. " - " .. TycoonConfig.PHASES[phase].Name
     end
     return "Fase " .. tostring(phase)
 end
@@ -108,7 +106,7 @@ Remotes.GetRemoteEvent("SyncState").OnClientEvent:Connect(function(data)
 
     pesosLbl.Text = "$" .. tostring(math.floor(data.pesos))
     leyLbl.Text = "Cu: " .. tostring(math.floor(data.ley)) .. " CLH"
-    phaseLbl.Text = "Fase " .. tostring(data.phase) .. " - " .. (TycoonConfig.PHASES[data.phase] and TycoonConfig.PHASES[data.phase].Name or "")
+    phaseLbl.Text = getPhaseName(data.phase)
 
     rebuildButtons()
 end)
