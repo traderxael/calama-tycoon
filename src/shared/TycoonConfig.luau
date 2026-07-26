@@ -34,7 +34,7 @@ TycoonConfig.SHOP = {
         CostLey = 0,
         Income = 0,
         IncomeInterval = 0,
-        Effect = "unlock_phase",
+        Effect = "terrain",
     },
     {
         Id = "chancador",
