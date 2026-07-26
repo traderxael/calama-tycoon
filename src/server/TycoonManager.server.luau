@@ -79,7 +79,11 @@ RunService.Heartbeat:Connect(function(dt)
                 Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
                     pesos = s.pesos, ley = s.ley,
                     owned = s.owned, phase = s.currentPhase,
+                    income = s.totalIncome,
                 })
+                if earn > 0 then
+                    Remotes.GetRemoteEvent("IncomeNotify"):FireClient(player, earn)
+                end
             end
         end
     end
@@ -136,6 +140,7 @@ Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, it
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
+        income = s.totalIncome,
     })
 end)
 
@@ -147,6 +152,7 @@ Remotes.GetRemoteEvent("CollectMoney").OnServerEvent:Connect(function(player)
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
+        income = s.totalIncome,
     })
 end)
 
@@ -157,6 +163,7 @@ Players.PlayerAdded:Connect(function(player)
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
+        income = s.totalIncome,
     })
 end)
 
@@ -192,6 +199,7 @@ local function handlePadClick(plr, pad)
     Remotes.GetRemoteEvent("SyncState"):FireClient(plr, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
+        income = s.totalIncome,
     })
 end
 

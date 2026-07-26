@@ -15,6 +15,7 @@ local REMOTE_NAMES = {
     "PurchaseItem",
     "CollectMoney",
     "SyncState",
+    "IncomeNotify",
 }
 
 local Remotes = {}
