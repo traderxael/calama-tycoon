@@ -1,0 +1,17 @@
+# Rojo
+.rojo/
+*.rbxm
+*.rbxmx
+
+# Binary
+rojo.exe
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.sublime-*
+.vscode/
+.idea/
+*.swp
