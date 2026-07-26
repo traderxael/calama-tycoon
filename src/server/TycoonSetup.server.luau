@@ -1,5 +1,6 @@
 -- TycoonSetup.server.luau
 -- Genera zona de spawn + pads de compra ordenados
+-- Usa ProximityPrompt (mas visible que ClickDetector)
 -- Busca modelos del usuario en Workspace\Models
 -- Corre UNA VEZ, se autodestruye
 
@@ -10,7 +11,7 @@ local spawnLoc = workspace:FindFirstChild("SpawnLocation")
 if not spawnLoc then
     spawnLoc = Instance.new("SpawnLocation")
     spawnLoc.Name = "SpawnLocation"
-    spawnLoc.Position = Vector3.new(0, 5, 0)
+    spawnLoc.Position = Vector3.new(0, 5, -20)
     spawnLoc.Parent = workspace
 end
 
@@ -31,6 +32,21 @@ local function fillFlat(cx, cz, w, h)
     )
 end
 fillFlat(0, 0, 30, 30)
+
+-- Markers para instrucciones
+local function createArrow(pos, label)
+    local p = Instance.new("Part")
+    p.Name = "Arrow_" .. label
+    p.Anchored = true
+    p.CanCollide = false
+    p.Size = Vector3.new(2, 0.5, 2)
+    p.Position = pos
+    p.BrickColor = BrickColor.new("Bright yellow")
+    p.Material = Enum.Material.Neon
+    p.Transparency = 0.3
+    p.Parent = workspace
+end
+createArrow(Vector3.new(0, 0.5, -15), "spawn_arrow")
 
 -- Pads en fila ordenada cerca del spawn
 local items = TycoonConfig.GetItemsByPhase(1)
@@ -71,10 +87,35 @@ for i, item in items do
         clone:PivotTo(CFrame.new(pos.X, pos.Y + 1.5, pos.Z))
     end
 
-    -- ClickDetector (radio generoso)
-    local cd = Instance.new("ClickDetector")
-    cd.MaxActivationDistance = 24
-    cd.Parent = pad
+    -- ProximityPrompt (mas visible que ClickDetector)
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.MaxActivationDistance = 16
+    prompt.HoldDuration = 0
+    prompt.RequiresLineOfSight = false
+    prompt.ClickablePrompt = true
+    prompt.Parent = pad
+
+    -- Color cue: cada tipo de item tiene color
+    local glowColor
+    if item.CostPesos == 0 and item.CostLey == 0 then
+        glowColor = BrickColor.new("Bright green") -- gratis
+    elseif item.Effect == "collector" then
+        glowColor = BrickColor.new("Bright yellow") -- colector
+    else
+        glowColor = BrickColor.new("Bright blue") -- pago normal
+    end
+
+    -- Glow ring (atractivo visual)
+    local glow = Instance.new("Part")
+    glow.Name = "Glow_" .. item.Id
+    glow.Anchored = true
+    glow.CanCollide = false
+    glow.Size = Vector3.new(11, 0.2, 11)
+    glow.Position = Vector3.new(pos.X, 0.2, pos.Z)
+    glow.BrickColor = glowColor
+    glow.Material = Enum.Material.Neon
+    glow.Transparency = 0.5
+    glow.Parent = padsFolder
 
     -- Billboard
     local bb = Instance.new("BillboardGui")
@@ -95,7 +136,11 @@ for i, item in items do
     local costLbl = Instance.new("TextLabel")
     costLbl.Size = UDim2.new(1, 0, 0, 18)
     costLbl.Position = UDim2.new(0, 0, 0, 24)
-    costLbl.TextColor3 = Color3.fromRGB(255, 200, 50)
+    if item.CostPesos == 0 and item.CostLey == 0 then
+        costLbl.TextColor3 = Color3.fromRGB(80, 255, 80)
+    else
+        costLbl.TextColor3 = Color3.fromRGB(255, 200, 50)
+    end
     costLbl.BackgroundTransparency = 1
     costLbl.Font = Enum.Font.Gotham
     costLbl.TextSize = 14
@@ -122,7 +167,7 @@ for i, item in items do
     print("Pad " .. item.Id .. " en " .. tostring(pos))
 end
 
--- Zona de grava alrededor de los pads (marcando el area de construccion)
+-- Zona de grava alrededor de los pads
 T:FillRegion(
     Region3.new(Vector3.new(-25, -3, 0), Vector3.new(25, 0.25, 40)),
     4, Enum.Material.Gravel
