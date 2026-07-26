@@ -160,6 +160,59 @@ Players.PlayerAdded:Connect(function(player)
     })
 end)
 
+-- ClickDetector wiring for pads (after pads are created)
+local function handlePadClick(plr, pad)
+    local s = states[plr]
+    if not s then return end
+    local itemId = pad.Name
+    local item = TycoonConfig.GetShopItem(itemId)
+    if not item then return end
+    if s.owned[item.Id] then return end
+    if item.Phase > s.currentPhase then return end
+    if item.PrereqId and not s.owned[item.PrereqId] then return end
+    if s.pesos < item.CostPesos then return end
+    if s.ley < item.CostLey then return end
+
+    -- Proximity check
+    local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        if (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
+            return
+        end
+    end
+
+    s.pesos -= item.CostPesos
+    s.ley -= item.CostLey
+    s.owned[item.Id] = true
+    if item.Effect == "unlock_phase" and item.Phase == s.currentPhase then
+        s.currentPhase += 1
+    end
+    s.totalIncome = calcIncome(s)
+
+    Remotes.GetRemoteEvent("SyncState"):FireClient(plr, {
+        pesos = s.pesos, ley = s.ley,
+        owned = s.owned, phase = s.currentPhase,
+    })
+end
+
+task.spawn(function()
+    task.wait(1)
+    local pads = workspace:WaitForChild("TycoonPads", 10)
+    if not pads then return end
+    local function wirePad(pad)
+        local cd = pad:FindFirstChildWhichIsA("ClickDetector")
+        if cd then
+            cd.MouseClick:Connect(function(plr)
+                handlePadClick(plr, pad)
+            end)
+        end
+    end
+    pads.ChildAdded:Connect(wirePad)
+    for _, pad in pads:GetChildren() do
+        wirePad(pad)
+    end
+end)
+
 Players.PlayerRemoving:Connect(function(player)
     savePlayer(player)
     states[player] = nil
