@@ -2,7 +2,6 @@
 -- Lazy get-or-create RemoteEvents
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
 if not remotesFolder then
@@ -16,6 +15,7 @@ local REMOTE_NAMES = {
     "CollectMoney",
     "SyncState",
     "IncomeNotify",
+    "PurchaseResult",
 }
 
 local Remotes = {}
@@ -23,13 +23,9 @@ local Remotes = {}
 function Remotes.GetRemoteEvent(name: string): RemoteEvent
     local remote = remotesFolder:FindFirstChild(name)
     if not remote then
-        if RunService:IsServer() then
-            remote = Instance.new("RemoteEvent")
-            remote.Name = name
-            remote.Parent = remotesFolder
-        else
-            remote = remotesFolder:WaitForChild(name, 5)
-        end
+        remote = Instance.new("RemoteEvent")
+        remote.Name = name
+        remote.Parent = remotesFolder
     end
     return remote :: RemoteEvent
 end
