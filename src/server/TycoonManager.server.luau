@@ -89,52 +89,33 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
--- Purchase handler
-Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, itemId)
+-- Execute purchase logic (shared between GUI + prompts)
+local function executePurchase(player, item, pad)
     local s = states[player]
-    if not s or type(itemId) ~= "string" then return end
-    local item = TycoonConfig.GetShopItem(itemId)
-    if not item then return end
-    if s.owned[item.Id] then return end
-    if item.Phase > s.currentPhase then return end
+    if not s then return false end
+    if s.owned[item.Id] then return false end
+    if item.Phase > s.currentPhase then return false end
+    if item.PrereqId and not s.owned[item.PrereqId] then return false end
+    if s.pesos < item.CostPesos then return false end
+    if s.ley < item.CostLey then return false end
 
-    -- Check prereq
-    if item.PrereqId and not s.owned[item.PrereqId] then return end
-
-    -- Check pesos
-    if s.pesos < item.CostPesos then return end
-    if s.ley < item.CostLey then return end
-
-    -- Validate proximity: find nearest owned pad
-    if item.CostPesos > 0 or item.CostLey > 0 then
+    -- Proximity check (if pad provided)
+    if pad then
         local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if root then
-            local pads = workspace:FindFirstChild("TycoonPads")
-            if pads then
-                local near = false
-                for _, pad in pads:GetChildren() do
-                    if pad:IsA("BasePart") and s.owned[pad.Name] then
-                        if (root.Position - pad.Position).Magnitude <= ECON.MAX_PURCHASE_DISTANCE then
-                            near = true
-                            break
-                        end
-                    end
-                end
-                if not near then return end
+            if (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
+                return false
             end
         end
     end
 
-    -- Purchase
+    -- Execute
     s.pesos -= item.CostPesos
     s.ley -= item.CostLey
     s.owned[item.Id] = true
-
-    -- Handle unlock_phase items
     if item.Effect == "unlock_phase" and item.Phase == s.currentPhase then
         s.currentPhase += 1
     end
-
     s.totalIncome = calcIncome(s)
 
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
@@ -142,13 +123,21 @@ Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, it
         owned = s.owned, phase = s.currentPhase,
         income = s.totalIncome,
     })
+    return true
+end
+
+-- Purchase handler (GUI buttons)
+Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, itemId)
+    if type(itemId) ~= "string" then return end
+    local item = TycoonConfig.GetShopItem(itemId)
+    if not item then return end
+    executePurchase(player, item, nil)
 end)
 
 -- Collector handler (pisar el colector cobra acumulado)
 Remotes.GetRemoteEvent("CollectMoney").OnServerEvent:Connect(function(player)
     local s = states[player]
     if not s then return end
-    -- Already auto-collected via heartbeat; this is a visual confirmation
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
@@ -167,51 +156,18 @@ Players.PlayerAdded:Connect(function(player)
     })
 end)
 
--- ClickDetector wiring for pads (after pads are created)
-local function handlePadClick(plr, pad)
-    local s = states[plr]
-    if not s then return end
-    local itemId = pad.Name
-    local item = TycoonConfig.GetShopItem(itemId)
-    if not item then return end
-    if s.owned[item.Id] then return end
-    if item.Phase > s.currentPhase then return end
-    if item.PrereqId and not s.owned[item.PrereqId] then return end
-    if s.pesos < item.CostPesos then return end
-    if s.ley < item.CostLey then return end
-
-    -- Proximity check
-    local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if root then
-        if (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
-            return
-        end
-    end
-
-    s.pesos -= item.CostPesos
-    s.ley -= item.CostLey
-    s.owned[item.Id] = true
-    if item.Effect == "unlock_phase" and item.Phase == s.currentPhase then
-        s.currentPhase += 1
-    end
-    s.totalIncome = calcIncome(s)
-
-    Remotes.GetRemoteEvent("SyncState"):FireClient(plr, {
-        pesos = s.pesos, ley = s.ley,
-        owned = s.owned, phase = s.currentPhase,
-        income = s.totalIncome,
-    })
-end
-
+-- ProximityPrompt wiring
 task.spawn(function()
-    task.wait(1)
+    task.wait(1.5)
     local pads = workspace:WaitForChild("TycoonPads", 10)
     if not pads then return end
     local function wirePad(pad)
-        local cd = pad:FindFirstChildWhichIsA("ClickDetector")
-        if cd then
-            cd.MouseClick:Connect(function(plr)
-                handlePadClick(plr, pad)
+        local prompt = pad:FindFirstChildWhichIsA("ProximityPrompt")
+        if prompt then
+            prompt.Triggered:Connect(function(plr)
+                local item = TycoonConfig.GetShopItem(pad.Name)
+                if not item then return end
+                executePurchase(plr, item, pad)
             end)
         end
     end
