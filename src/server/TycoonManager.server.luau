@@ -92,20 +92,37 @@ end)
 -- Execute purchase logic (shared between GUI + prompts)
 local function executePurchase(player, item, pad)
     local s = states[player]
-    if not s then return false end
-    if s.owned[item.Id] then return false end
-    if item.Phase > s.currentPhase then return false end
-    if item.PrereqId and not s.owned[item.PrereqId] then return false end
-    if s.pesos < item.CostPesos then return false end
-    if s.ley < item.CostLey then return false end
+    if not s then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Estado no disponible")
+        return false
+    end
+    if s.owned[item.Id] then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Ya tienes este item")
+        return false
+    end
+    if item.Phase > s.currentPhase then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Fase no disponible")
+        return false
+    end
+    if item.PrereqId and not s.owned[item.PrereqId] then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Compra el item anterior primero")
+        return false
+    end
+    if s.pesos < item.CostPesos then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Fondos insuficientes")
+        return false
+    end
+    if s.ley < item.CostLey then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "No tienes suficiente Ley Alta")
+        return false
+    end
 
     -- Proximity check (if pad provided)
     if pad then
         local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            if (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
-                return false
-            end
+        if root and (root.Position - pad.Position).Magnitude > ECON.MAX_PURCHASE_DISTANCE then
+            Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Acercate al pad")
+            return false
         end
     end
 
@@ -123,6 +140,7 @@ local function executePurchase(player, item, pad)
         owned = s.owned, phase = s.currentPhase,
         income = s.totalIncome,
     })
+    Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, item.Name .. " comprado!")
     return true
 end
 
