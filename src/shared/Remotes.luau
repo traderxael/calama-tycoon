@@ -12,25 +12,12 @@ if not remotesFolder then
 end
 
 local REMOTE_NAMES = {
-    "UpgradeStage",
-    "PurchaseStage",
-    "DispatchExport",
-    "BuyRebirth",
+    "PurchaseItem",
+    "CollectMoney",
     "SyncState",
-    "NotifyMoney",
-    "NotifyStock",
-    "NotifyStageUnlock",
-    "NotifyRebirth",
-    "NotifyLME",
-    "CoopBonusUpdate",
 }
 
 local Remotes = {}
-
-for _, name in REMOTE_NAMES do
-    local remoteName = name :: string
-    Remotes[remoteName] = nil
-end
 
 function Remotes.GetRemoteEvent(name: string): RemoteEvent
     local remote = remotesFolder:FindFirstChild(name)
