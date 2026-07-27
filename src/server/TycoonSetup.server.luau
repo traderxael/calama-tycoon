@@ -11,22 +11,32 @@ local platform = Instance.new("Part")
 platform.Name = "SpawnPlatform"
 platform.Anchored = true
 platform.CanCollide = true
-platform.Size = Vector3.new(60, 1, 50)
-platform.Position = Vector3.new(0, -0.5, 12)
+platform.Size = Vector3.new(60, 3, 50)
+platform.Position = Vector3.new(0, 0.5, 12)
 platform.BrickColor = BrickColor.new("Dark stone grey")
 platform.Material = Enum.Material.Slate
 platform.TopSurface = Enum.SurfaceType.Smooth
 platform.BottomSurface = Enum.SurfaceType.Smooth
 platform.Parent = workspace
 
+-- Terreno compacto bajo la plataforma y pads
+local T = workspace.Terrain
+local function fillFlat(cx, cz, w, h)
+    T:FillRegion(
+        Region3.new(Vector3.new(cx-w, -4, cz-w), Vector3.new(cx+w, 0.5, cz+w)),
+        4, Enum.Material.Sand
+    )
+end
+fillFlat(0, 12, 40, 40)
+
 -- ── SPAWN ──
 local spawnLoc = workspace:FindFirstChild("SpawnLocation")
 if not spawnLoc then
     spawnLoc = Instance.new("SpawnLocation")
     spawnLoc.Name = "SpawnLocation"
-    spawnLoc.Position = Vector3.new(0, 3.5, 2)
-    spawnLoc.Parent = workspace
 end
+spawnLoc.Position = Vector3.new(0, 3.5, 2)
+spawnLoc.Parent = workspace
 
 -- ── PADS FOLDER ──
 local padsFolder = Instance.new("Folder")
@@ -35,16 +45,6 @@ padsFolder.Parent = workspace
 
 -- Buscar modelos del usuario
 local modelsFolder = workspace:FindFirstChild("Models")
-
--- ── Terreno ──
-local T = workspace.Terrain
-local function fillFlat(cx, cz, w, h)
-    T:FillRegion(
-        Region3.new(Vector3.new(cx-w, -4, cz-w), Vector3.new(cx+w, 0, cz+w)),
-        4, Enum.Material.Sand
-    )
-end
-fillFlat(0, 12, 40, 40)
 
 -- ── PADS en fila ordenada ──
 local items = TycoonConfig.GetItemsByPhase(1)
@@ -166,7 +166,7 @@ for i, item in items do
 end
 
 -- ── Grava decorativa alrededor ──
-T:FillRegion(
+workspace.Terrain:FillRegion(
     Region3.new(Vector3.new(-30, -4, -10), Vector3.new(30, 0, 35)),
     4, Enum.Material.Gravel
 )
