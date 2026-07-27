@@ -174,6 +174,13 @@ local panelTitle = makeLbl(panelFrame, "", Color3.fromRGB(255, 200, 50), 20, tru
 panelTitle.Position = UDim2.new(0, 12, 0, 8)
 panelTitle.Size = UDim2.new(1, -24, 0, 24)
 
+local function closePanel()
+    openPanel = nil
+    panelFrame.Visible = false
+    dim.BackgroundTransparency = 1
+    panelFrame.BackgroundTransparency = 1
+end
+
 local panelClose = makeBtn(panelFrame, "X", Color3.fromRGB(60, 30, 30), 24, 24)
 panelClose.Position = UDim2.new(1, -32, 0, 8)
 panelClose.TextColor3 = Color3.fromRGB(200, 80, 80)
@@ -193,13 +200,6 @@ local contentLayout = Instance.new("UIListLayout")
 contentLayout.Padding = UDim.new(0, 4)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 contentLayout.Parent = panelContent
-
-local function closePanel()
-    openPanel = nil
-    panelFrame.Visible = false
-    dim.BackgroundTransparency = 1
-    panelFrame.BackgroundTransparency = 1
-end
 
 -- ── PANEL BUILDERS ──
 local function clearContent()
