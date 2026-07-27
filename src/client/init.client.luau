@@ -118,6 +118,7 @@ local dockDefs = {
     { id = "machines", label = "Maquinas",  icon = "M" },
     { id = "map",      label = "Mapa",      icon = "P" },
     { id = "stats",    label = "Stats",     icon = "S" },
+    { id = "sell",     label = "Vender",    icon = "V" },
     { id = "missions", label = "Misiones",  icon = "T" },
 }
 local btnW = 64
@@ -337,6 +338,48 @@ local function buildStatsPanel()
     end
 end
 
+local function buildSellPanel()
+    clearContent()
+    panelTitle.Text = "Venta de Mineral"
+    -- Ore balance
+    local oreLbl = makeLbl(panelContent, "Mineral: " .. tostring(state.ore or 0) .. " ton.", Color3.fromRGB(255, 200, 50), 16, true)
+    oreLbl.Size = UDim2.new(1, 0, 0, 24)
+    oreLbl.Position = UDim2.new(0, 8, 0, 4)
+    -- Price per unit
+    local priceLbl = makeLbl(panelContent, "Precio: $" .. tostring(TycoonConfig.ECONOMY.ORE_SELL_PRICE) .. "/ton", Color3.fromRGB(180, 180, 180), 13)
+    priceLbl.Size = UDim2.new(1, 0, 0, 20)
+    priceLbl.Position = UDim2.new(0, 8, 0, 28)
+    -- Sell All button
+    local sellBtn = makeBtn(panelContent, "VENDER TODO", Color3.fromRGB(30, 80, 30), 200, 40, 16)
+    sellBtn.Position = UDim2.new(0.5, -100, 0, 60)
+    sellBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 40)
+    sellBtn.TextColor3 = Color3.fromRGB(200, 255, 200)
+    sellBtn.MouseButton1Click:Connect(function()
+        Remotes.GetRemoteEvent("SellOre"):FireServer(nil) -- nil = sell all
+    end)
+    -- Sell custom amount
+    local sell10 = makeBtn(panelContent, "Vender 10", Color3.fromRGB(40, 80, 40), 90, 30, 13)
+    sell10.Position = UDim2.new(0.5, -150, 0, 115)
+    sell10.MouseButton1Click:Connect(function()
+        Remotes.GetRemoteEvent("SellOre"):FireServer(10)
+    end)
+    local sell50 = makeBtn(panelContent, "Vender 50", Color3.fromRGB(40, 80, 40), 90, 30, 13)
+    sell50.Position = UDim2.new(0.5, -50, 0, 115)
+    sell50.MouseButton1Click:Connect(function()
+        Remotes.GetRemoteEvent("SellOre"):FireServer(50)
+    end)
+    local sell100 = makeBtn(panelContent, "Vender 100", Color3.fromRGB(40, 80, 40), 90, 30, 13)
+    sell100.Position = UDim2.new(0.5, 50, 0, 115)
+    sell100.MouseButton1Click:Connect(function()
+        Remotes.GetRemoteEvent("SellOre"):FireServer(100)
+    end)
+    -- Earning preview
+    local previewLbl = makeLbl(panelContent, "", Color3.fromRGB(120, 120, 120), 11)
+    previewLbl.Size = UDim2.new(1, 0, 0, 20)
+    previewLbl.Position = UDim2.new(0, 8, 0, 155)
+    previewLbl.Text = "Vendiendo todo: $" .. tostring((state.ore or 0) * TycoonConfig.ECONOMY.ORE_SELL_PRICE)
+end
+
 local function buildMissionsPanel()
     clearContent()
     panelTitle.Text = "Misiones"
@@ -405,6 +448,7 @@ local panelBuilders = {
     machines = buildMachinesPanel,
     map = buildMapPanel,
     stats = buildStatsPanel,
+    sell = buildSellPanel,
     missions = buildMissionsPanel,
 }
 
@@ -486,6 +530,7 @@ Remotes.GetRemoteEvent("SyncState").OnClientEvent:Connect(function(data)
     state.owned = data.owned
     state.phase = data.phase
     state.income = data.income or 0
+    state.ore = data.ore or 0
 
     pesosInd.Text = "$" .. tostring(math.floor(state.pesos))
     incomeInd.Text = "+$" .. tostring(state.income) .. "/s"
