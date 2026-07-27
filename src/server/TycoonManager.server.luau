@@ -25,6 +25,8 @@ type PlayerState = {
     currentPhase: number,
     totalIncome: number,
     incomeAccum: number,
+    ore: number,
+    oreAccum: number,
     lastSave: number,
     lastCollect: number,
 }
@@ -49,6 +51,7 @@ function savePlayer(player: Player)
         ley = s.ley,
         owned = s.owned,
         phase = s.currentPhase,
+        ore = s.ore,
     })
 end
 
@@ -61,6 +64,8 @@ function loadPlayer(player: Player): PlayerState
         currentPhase = 1,
         totalIncome = 0,
         incomeAccum = 0,
+        ore = 0,
+        oreAccum = 0,
         lastSave = 0,
         lastCollect = 0,
     }
@@ -79,7 +84,7 @@ local function fireSync(player, s)
     Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
         pesos = s.pesos, ley = s.ley,
         owned = s.owned, phase = s.currentPhase,
-        income = s.totalIncome,
+        income = s.totalIncome, ore = s.ore,
     })
 end
 
@@ -93,6 +98,13 @@ RunService.Heartbeat:Connect(function(dt)
                 local earn = math.floor(s.incomeAccum)
                 s.pesos += earn
                 s.incomeAccum -= earn
+                -- Mineral acumulado
+                s.oreAccum += dt * s.totalIncome * ECON.ORE_PER_DOLLAR
+                if s.oreAccum >= 1 then
+                    local oreGain = math.floor(s.oreAccum)
+                    s.ore += oreGain
+                    s.oreAccum -= oreGain
+                end
                 fireSync(player, s)
                 if earn > 0 then
                     Remotes.GetRemoteEvent("IncomeNotify"):FireClient(player, earn)
@@ -203,6 +215,37 @@ Remotes.GetRemoteEvent("CollectMoney").OnServerEvent:Connect(function(player)
     local s = states[player]
     if not s then return end
     fireSync(player, s)
+end)
+
+-- Sell Mineral handler
+Remotes.GetRemoteEvent("SellOre").OnServerEvent:Connect(function(player, amount)
+    local s = states[player]
+    if not s then return end
+    amount = typeof(amount) == "number" and math.max(1, math.floor(amount)) or nil
+    if not amount then
+        -- Sell all
+        local price = s.ore * ECON.ORE_SELL_PRICE
+        if price <= 0 then
+            Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "No tienes mineral")
+            return
+        end
+        s.pesos += price
+        local sold = s.ore
+        s.ore = 0
+        fireSync(player, s)
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, "Vendiste " .. tostring(sold) .. " mineral por $" .. tostring(price))
+        return
+    end
+    local toSell = math.min(amount, s.ore)
+    if toSell <= 0 then
+        Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "No tienes suficiente mineral")
+        return
+    end
+    local price = toSell * ECON.ORE_SELL_PRICE
+    s.pesos += price
+    s.ore -= toSell
+    fireSync(player, s)
+    Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, "Vendiste " .. tostring(toSell) .. " mineral por $" .. tostring(price))
 end)
 
 -- Player lifecycle

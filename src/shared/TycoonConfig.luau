@@ -239,6 +239,8 @@ TycoonConfig.ECONOMY = {
     COLECTOR_INTERVAL = 2,
     DISPATCH_COOLDOWN = 2,
     MAX_PURCHASE_DISTANCE = 18,
+    ORE_SELL_PRICE = 8, -- $8 por cada unidad de mineral
+    ORE_PER_DOLLAR = 0.2, -- 1 mineral cada $5 de ingreso
 }
 
 -- Player Levels
