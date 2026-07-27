@@ -1,5 +1,6 @@
 -- TycoonManager.server.luau
 -- Server-authoritative single Heartbeat loop - Calama Tycoon
+-- v3: Collector pad bonus, feedback completo
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,6 +11,7 @@ local DataStoreUtils = require(script.Parent.Parent.Shared.DataStoreUtils)
 
 local ECON = TycoonConfig.ECONOMY
 local playerDS = DataStoreService:GetDataStore("CalamaTycoon_v1")
+local COLECTOR_COOLDOWN = 15 -- segundos entre bonus
 
 type PlayerState = {
     pesos: number,
@@ -19,6 +21,7 @@ type PlayerState = {
     totalIncome: number,
     incomeAccum: number,
     lastSave: number,
+    lastCollect: number,
 }
 
 local states: { [Player]: PlayerState } = {}
@@ -54,6 +57,7 @@ function loadPlayer(player: Player): PlayerState
         totalIncome = 0,
         incomeAccum = 0,
         lastSave = 0,
+        lastCollect = 0,
     }
     if data then
         s.pesos = data.pesos or 0
@@ -66,7 +70,15 @@ function loadPlayer(player: Player): PlayerState
     return s
 end
 
--- Heartbeat: single loop
+local function fireSync(player, s)
+    Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
+        pesos = s.pesos, ley = s.ley,
+        owned = s.owned, phase = s.currentPhase,
+        income = s.totalIncome,
+    })
+end
+
+-- Heartbeat: auto-income
 RunService.Heartbeat:Connect(function(dt)
     for _, player in Players:GetPlayers() do
         local s = states[player]
@@ -76,11 +88,7 @@ RunService.Heartbeat:Connect(function(dt)
                 local earn = math.floor(s.incomeAccum)
                 s.pesos += earn
                 s.incomeAccum -= earn
-                Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
-                    pesos = s.pesos, ley = s.ley,
-                    owned = s.owned, phase = s.currentPhase,
-                    income = s.totalIncome,
-                })
+                fireSync(player, s)
                 if earn > 0 then
                     Remotes.GetRemoteEvent("IncomeNotify"):FireClient(player, earn)
                 end
@@ -89,7 +97,7 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
--- Execute purchase logic (shared between GUI + prompts)
+-- Execute purchase (shared: GUI buttons + ProximityPrompt)
 local function executePurchase(player, item, pad)
     local s = states[player]
     if not s then
@@ -97,6 +105,22 @@ local function executePurchase(player, item, pad)
         return false
     end
     if s.owned[item.Id] then
+        -- Already owned: check if collector -> trigger collect instead
+        if item.Effect == "collector" then
+            local now = os.clock()
+            local remaining = COLECTOR_COOLDOWN - (now - s.lastCollect)
+            if remaining > 0 then
+                Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Cooldown: " .. tostring(math.ceil(remaining)) .. "s")
+                return false
+            end
+            local bonus = math.max(s.totalIncome * 3, 10)
+            s.pesos += bonus
+            s.lastCollect = now
+            fireSync(player, s)
+            Remotes.GetRemoteEvent("IncomeNotify"):FireClient(player, bonus)
+            Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, "+$" .. tostring(bonus) .. " BONUS COLECTOR!")
+            return true
+        end
         Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, false, "Ya tienes este item")
         return false
     end
@@ -126,7 +150,7 @@ local function executePurchase(player, item, pad)
         end
     end
 
-    -- Execute
+    -- Execute purchase
     s.pesos -= item.CostPesos
     s.ley -= item.CostLey
     s.owned[item.Id] = true
@@ -134,17 +158,12 @@ local function executePurchase(player, item, pad)
         s.currentPhase += 1
     end
     s.totalIncome = calcIncome(s)
-
-    Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
-        pesos = s.pesos, ley = s.ley,
-        owned = s.owned, phase = s.currentPhase,
-        income = s.totalIncome,
-    })
+    fireSync(player, s)
     Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, item.Name .. " comprado!")
     return true
 end
 
--- Purchase handler (GUI buttons)
+-- Purchase handler (GUI buttons from Tienda panel)
 Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, itemId)
     if type(itemId) ~= "string" then return end
     local item = TycoonConfig.GetShopItem(itemId)
@@ -152,26 +171,18 @@ Remotes.GetRemoteEvent("PurchaseItem").OnServerEvent:Connect(function(player, it
     executePurchase(player, item, nil)
 end)
 
--- Collector handler (pisar el colector cobra acumulado)
+-- Collector handler (legacy, desde Init.client, pero ya se maneja en executePurchase)
 Remotes.GetRemoteEvent("CollectMoney").OnServerEvent:Connect(function(player)
     local s = states[player]
     if not s then return end
-    Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
-        pesos = s.pesos, ley = s.ley,
-        owned = s.owned, phase = s.currentPhase,
-        income = s.totalIncome,
-    })
+    fireSync(player, s)
 end)
 
 -- Player lifecycle
 Players.PlayerAdded:Connect(function(player)
     local s = loadPlayer(player)
     task.wait(1)
-    Remotes.GetRemoteEvent("SyncState"):FireClient(player, {
-        pesos = s.pesos, ley = s.ley,
-        owned = s.owned, phase = s.currentPhase,
-        income = s.totalIncome,
-    })
+    fireSync(player, s)
 end)
 
 -- ProximityPrompt wiring
