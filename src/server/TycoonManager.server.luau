@@ -2,12 +2,17 @@
 -- Server-authoritative single Heartbeat loop - Calama Tycoon
 -- v3: Collector pad bonus, feedback completo
 
+-- Guard: evitar doble-ejecucion si init.server hace require()
+if _G.__TYCOON_MANAGER_RAN then return end
+_G.__TYCOON_MANAGER_RAN = true
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local DataStoreService = game:GetService("DataStoreService")
-local TycoonConfig = require(script.Parent.Parent.Shared.TycoonConfig)
-local Remotes = require(script.Parent.Parent.Shared.Remotes)
-local DataStoreUtils = require(script.Parent.Parent.Shared.DataStoreUtils)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TycoonConfig = require(ReplicatedStorage.Shared.TycoonConfig)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local DataStoreUtils = require(ReplicatedStorage.Shared.DataStoreUtils)
 
 local ECON = TycoonConfig.ECONOMY
 local playerDS = DataStoreService:GetDataStore("CalamaTycoon_v1")
