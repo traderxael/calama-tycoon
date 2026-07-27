@@ -1,21 +1,34 @@
 -- TycoonSetup.server.luau
 -- Genera zona de spawn + pads de compra ordenados
--- Usa ProximityPrompt (mas visible que ClickDetector)
+-- Usa ProximityPrompt + plataforma solida bajo los pies
 -- Busca modelos del usuario en Workspace\Models
 -- Corre UNA VEZ, se autodestruye
 
 local TycoonConfig = require(script.Parent.Parent.Shared.TycoonConfig)
 
--- Spawn
+-- ── PLATAFORMA SOLIDA (evita caerse del mundo) ──
+local platform = Instance.new("Part")
+platform.Name = "SpawnPlatform"
+platform.Anchored = true
+platform.CanCollide = true
+platform.Size = Vector3.new(60, 1, 50)
+platform.Position = Vector3.new(0, -0.5, 12)
+platform.BrickColor = BrickColor.new("Dark stone grey")
+platform.Material = Enum.Material.Slate
+platform.TopSurface = Enum.SurfaceType.Smooth
+platform.BottomSurface = Enum.SurfaceType.Smooth
+platform.Parent = workspace
+
+-- ── SPAWN ──
 local spawnLoc = workspace:FindFirstChild("SpawnLocation")
 if not spawnLoc then
     spawnLoc = Instance.new("SpawnLocation")
     spawnLoc.Name = "SpawnLocation"
-    spawnLoc.Position = Vector3.new(0, 5, -20)
+    spawnLoc.Position = Vector3.new(0, 3.5, 2)
     spawnLoc.Parent = workspace
 end
 
--- Pads folder
+-- ── PADS FOLDER ──
 local padsFolder = Instance.new("Folder")
 padsFolder.Name = "TycoonPads"
 padsFolder.Parent = workspace
@@ -23,56 +36,41 @@ padsFolder.Parent = workspace
 -- Buscar modelos del usuario
 local modelsFolder = workspace:FindFirstChild("Models")
 
--- Terreno base plano cerca del spawn
+-- ── Terreno ──
 local T = workspace.Terrain
 local function fillFlat(cx, cz, w, h)
     T:FillRegion(
-        Region3.new(Vector3.new(cx-w, -2, cz-w), Vector3.new(cx+w, 0.5, cz+w)),
+        Region3.new(Vector3.new(cx-w, -4, cz-w), Vector3.new(cx+w, 0, cz+w)),
         4, Enum.Material.Sand
     )
 end
-fillFlat(0, 0, 30, 30)
+fillFlat(0, 12, 40, 40)
 
--- Markers para instrucciones
-local function createArrow(pos, label)
-    local p = Instance.new("Part")
-    p.Name = "Arrow_" .. label
-    p.Anchored = true
-    p.CanCollide = false
-    p.Size = Vector3.new(2, 0.5, 2)
-    p.Position = pos
-    p.BrickColor = BrickColor.new("Bright yellow")
-    p.Material = Enum.Material.Neon
-    p.Transparency = 0.3
-    p.Parent = workspace
-end
-createArrow(Vector3.new(0, 0.5, -15), "spawn_arrow")
-
--- Pads en fila ordenada cerca del spawn
+-- ── PADS en fila ordenada ──
 local items = TycoonConfig.GetItemsByPhase(1)
 local columns = 3
 local spacing = 12
 local startX = -(math.min(#items, columns) - 1) * spacing / 2
-local zPos = 15
+local zPos = 12
 
 for i, item in items do
     local col = (i - 1) % columns
     local row = math.floor((i - 1) / columns)
-    local pos = Vector3.new(startX + col * spacing, 1, zPos + row * spacing)
+    local pos = Vector3.new(startX + col * spacing, 0.5, zPos + row * spacing)
 
-    -- Try to find matching user model
+    -- Modelo del usuario si existe
     local model
     if modelsFolder then
         model = modelsFolder:FindFirstChild(item.Id)
             or modelsFolder:FindFirstChild(item.Name)
     end
 
-    -- Pad base (plataforma de piedra)
+    -- Pad base
     local pad = Instance.new("Part")
     pad.Name = item.Id
     pad.Anchored = true
     pad.CanCollide = true
-    pad.Size = Vector3.new(10, 1, 10)
+    pad.Size = Vector3.new(10, 0.5, 10)
     pad.Position = pos
     pad.BrickColor = BrickColor.new("Dark stone grey")
     pad.Material = Enum.Material.Slate
@@ -80,14 +78,14 @@ for i, item in items do
     pad.BottomSurface = Enum.SurfaceType.Smooth
     pad.Parent = padsFolder
 
-    -- User model si existe
+    -- User model
     if model then
         local clone = model:Clone()
         clone.Parent = pad
-        clone:PivotTo(CFrame.new(pos.X, pos.Y + 1.5, pos.Z))
+        clone:PivotTo(CFrame.new(pos.X, pos.Y + 1.2, pos.Z))
     end
 
-    -- ProximityPrompt (mas visible que ClickDetector)
+    -- ProximityPrompt
     local prompt = Instance.new("ProximityPrompt")
     prompt.MaxActivationDistance = 16
     prompt.HoldDuration = 0
@@ -95,23 +93,23 @@ for i, item in items do
     prompt.ClickablePrompt = true
     prompt.Parent = pad
 
-    -- Color cue: cada tipo de item tiene color
+    -- Color del glow segun tipo
     local glowColor
     if item.CostPesos == 0 and item.CostLey == 0 then
-        glowColor = BrickColor.new("Bright green") -- gratis
+        glowColor = BrickColor.new("Bright green")
     elseif item.Effect == "collector" then
-        glowColor = BrickColor.new("Bright yellow") -- colector
+        glowColor = BrickColor.new("Bright yellow")
     else
-        glowColor = BrickColor.new("Bright blue") -- pago normal
+        glowColor = BrickColor.new("Bright blue")
     end
 
-    -- Glow ring (atractivo visual)
+    -- Anillo de glow
     local glow = Instance.new("Part")
     glow.Name = "Glow_" .. item.Id
     glow.Anchored = true
     glow.CanCollide = false
     glow.Size = Vector3.new(11, 0.2, 11)
-    glow.Position = Vector3.new(pos.X, 0.2, pos.Z)
+    glow.Position = Vector3.new(pos.X, 0.05, pos.Z)
     glow.BrickColor = glowColor
     glow.Material = Enum.Material.Neon
     glow.Transparency = 0.5
@@ -120,7 +118,7 @@ for i, item in items do
     -- Billboard
     local bb = Instance.new("BillboardGui")
     bb.Size = UDim2.new(0, 220, 0, 70)
-    bb.StudsOffset = Vector3.new(0, 6, 0)
+    bb.StudsOffset = Vector3.new(0, 5.5, 0)
     bb.AlwaysOnTop = true
     bb.Parent = pad
 
@@ -167,11 +165,11 @@ for i, item in items do
     print("Pad " .. item.Id .. " en " .. tostring(pos))
 end
 
--- Zona de grava alrededor de los pads
+-- ── Grava decorativa alrededor ──
 T:FillRegion(
-    Region3.new(Vector3.new(-25, -3, 0), Vector3.new(25, 0.25, 40)),
+    Region3.new(Vector3.new(-30, -4, -10), Vector3.new(30, 0, 35)),
     4, Enum.Material.Gravel
 )
 
-print("=== TycoonPads generados cerca del spawn ===")
+print("=== TycoonPads generados ===")
 script:Destroy()

@@ -241,6 +241,20 @@ TycoonConfig.ECONOMY = {
     MAX_PURCHASE_DISTANCE = 18,
 }
 
+-- Player Levels
+TycoonConfig.LEVELS = {
+    MAX_LEVEL = 50,
+    XP_PER_DOLLAR = 0.2, -- 1 XP cada $5
+    BASE_XP_MULTIPLIER = 50, -- formula: level^2 * this
+    BONUS_PER_LEVEL = 0.02, -- +2% income por nivel
+}
+function TycoonConfig.XPForLevel(level: number): number
+    return level * level * TycoonConfig.LEVELS.BASE_XP_MULTIPLIER
+end
+function TycoonConfig.IncomeMultiplier(level: number): number
+    return 1.0 + (level - 1) * TycoonConfig.LEVELS.BONUS_PER_LEVEL
+end
+
 function TycoonConfig.GetShopItem(id: string): ShopItem?
     for _, item in TycoonConfig.SHOP do
         if item.Id == id then return item end
