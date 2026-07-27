@@ -1,10 +1,12 @@
 -- TycoonSetup.server.luau
 -- Genera zona de spawn + pads de compra ordenados
--- Usa ProximityPrompt + plataforma solida bajo los pies
--- Busca modelos del usuario en Workspace\Models
 -- Corre UNA VEZ, se autodestruye
 
-local TycoonConfig = require(script.Parent.Parent.Shared.TycoonConfig)
+-- Guard: evitar doble-ejecucion
+if _G.__TYCOON_SETUP_RAN then return end
+_G.__TYCOON_SETUP_RAN = true
+
+local TycoonConfig = require(game:GetService("ReplicatedStorage").Shared.TycoonConfig)
 
 -- ── PLATAFORMA SOLIDA (evita caerse del mundo) ──
 local platform = Instance.new("Part")
