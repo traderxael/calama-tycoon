@@ -45,9 +45,6 @@ local padsFolder = Instance.new("Folder")
 padsFolder.Name = "TycoonPads"
 padsFolder.Parent = workspace
 
--- Buscar modelos del usuario
-local modelsFolder = workspace:FindFirstChild("Models")
-
 -- ── PADS en fila ordenada ──
 local items = TycoonConfig.GetItemsByPhase(1)
 local columns = 3
@@ -60,12 +57,109 @@ for i, item in items do
     local row = math.floor((i - 1) / columns)
     local pos = Vector3.new(startX + col * spacing, 0.5, zPos + row * spacing)
 
-    -- Modelo del usuario si existe
-    local model
-    if modelsFolder then
-        model = modelsFolder:FindFirstChild(item.Id)
-            or modelsFolder:FindFirstChild(item.Name)
+    -- Construir modelo visual sobre el pad
+    local function buildPadModel(padPos: Vector3, itemId: string): Model?
+        local m = Instance.new("Model")
+        m.Name = itemId .. "_Model"
+        local p = function(off, sz, col: BrickColor, mat: Enum.Material?)
+            local part = Instance.new("Part")
+            part.Anchored = true
+            part.CanCollide = false
+            part.Size = sz or Vector3.new(1,1,1)
+            part.Position = padPos + off
+            part.BrickColor = col or BrickColor.new("Medium stone grey")
+            if mat then part.Material = mat end
+            part.TopSurface = Enum.SurfaceType.Smooth
+            part.BottomSurface = Enum.SurfaceType.Smooth
+            part.Parent = m
+            return part
+        end
+        local function w(off: Vector3, sz: Vector3, col: BrickColor): Part
+            return p(off, sz, col, Enum.Material.Wood)
+        end
+        local function s(off: Vector3, sz: Vector3, col: BrickColor): Part
+            return p(off, sz, col, Enum.Material.Slate)
+        end
+        if itemId == "terreno" then
+            -- Bandera de reclamo: poste + banderin
+            p(Vector3.new(0,1.5,0), Vector3.new(0.3,3,0.3), BrickColor.new("Bright yellow"))
+            p(Vector3.new(1.5,2.5,0), Vector3.new(2,1.2,0.05), BrickColor.new("Bright green"), Enum.Material.Fabric)
+            p(Vector3.new(0,4,0), Vector3.new(0.5,0.5,0.5), BrickColor.new("Bright yellow"))
+        elseif itemId == "chancador" then
+            -- Chancador: base de piedra + tolva + embudo
+            s(Vector3.new(0,0.5,0), Vector3.new(5,1,5), BrickColor.new("Dark stone grey"))
+            s(Vector3.new(0,1.5,0), Vector3.new(3,1,3), BrickColor.new("Medium stone grey"))
+            p(Vector3.new(0,2.5,0), Vector3.new(2.5,0.5,2.5), BrickColor.new("Black"), Enum.Material.Metal)
+            p(Vector3.new(0,1.5,0), Vector3.new(0.8,2,0.8), BrickColor.new("Really black"), Enum.Material.Metal)
+            p(Vector3.new(0.8,1.2,0.8), Vector3.new(0.3,0.3,0.3), BrickColor.new("Bright orange"))
+            p(Vector3.new(-0.8,1.2,-0.8), Vector3.new(0.3,0.3,0.3), BrickColor.new("Bright orange"))
+            p(Vector3.new(0.8,1.2,-0.8), Vector3.new(0.3,0.3,0.3), BrickColor.new("Bright orange"))
+            p(Vector3.new(-0.8,1.2,0.8), Vector3.new(0.3,0.3,0.3), BrickColor.new("Bright orange"))
+        elseif itemId == "cinta" then
+            -- Cinta transportadora: banda + rodillos
+            s(Vector3.new(0,0.3,0), Vector3.new(2,0.2,2), BrickColor.new("Dark stone grey"))
+            w(Vector3.new(0,0.8,0), Vector3.new(6,0.2,1.5), BrickColor.new("Brown"))
+            for r = -2.5, 2.5, 1.2 do
+                s(Vector3.new(r,0.8,0), Vector3.new(0.2,0.6,1.8), BrickColor.new("Dark stone grey"))
+                p(Vector3.new(r,0.3,1.1), Vector3.new(0.3,0.2,0.3), BrickColor.new("Black"))
+                p(Vector3.new(r,0.3,-1.1), Vector3.new(0.3,0.2,0.3), BrickColor.new("Black"))
+            end
+            -- Mineral sobre la cinta
+            for r = -1.5, 1.5, 0.9 do
+                p(Vector3.new(r,1.1,0), Vector3.new(0.5,0.3,0.5), BrickColor.new("Bright orange"))
+            end
+        elseif itemId == "colector" then
+            -- Colector: contenedor grande + mineral dentro
+            s(Vector3.new(0,0.5,0), Vector3.new(5,1,5), BrickColor.new("Dark stone grey"))
+            s(Vector3.new(0,1.8,0), Vector3.new(4,1.5,4), BrickColor.new("Bright yellow"), Enum.Material.Metal)
+            p(Vector3.new(0,2.8,0), Vector3.new(4.2,0.3,4.2), BrickColor.new("Bright yellow"), Enum.Material.Metal)
+            -- Cobre dentro
+            for _ = 1, 5 do
+                local lx = (math.random() - 0.5) * 2.5
+                local lz = (math.random() - 0.5) * 2.5
+                p(Vector3.new(lx, 1.3, lz), Vector3.new(0.4,0.2,0.4), BrickColor.new("Bright orange"))
+            end
+        elseif itemId == "minero" then
+            -- Minero: figura simple + casco
+            local body = s(Vector3.new(0,0.5,0), Vector3.new(3,1,3), BrickColor.new("Dark stone grey"))
+            -- Cuerpo
+            p(Vector3.new(0.6,1.8,-0.3), Vector3.new(0.8,1.2,0.6), BrickColor.new("Bright yellow"), Enum.Material.Fabric)
+            -- Piernas
+            p(Vector3.new(0.4,0.8,-0.3), Vector3.new(0.4,0.8,0.4), BrickColor.new("Dark stone grey"), Enum.Material.Fabric)
+            p(Vector3.new(0.8,0.8,-0.3), Vector3.new(0.4,0.8,0.4), BrickColor.new("Dark stone grey"), Enum.Material.Fabric)
+            -- Cabeza
+            p(Vector3.new(0.6,2.8,-0.3), Vector3.new(0.6,0.6,0.6), BrickColor.new("Bright yellow"))
+            -- Casco
+            p(Vector3.new(0.6,3.2,-0.3), Vector3.new(0.7,0.2,0.7), BrickColor.new("Bright orange"))
+            -- Brazos
+            p(Vector3.new(1.2,1.8,-0.3), Vector3.new(0.2,0.8,0.2), BrickColor.new("Bright yellow"), Enum.Material.Fabric)
+            -- Pico
+            p(Vector3.new(2,1.2,-0.3), Vector3.new(1.5,0.2,0.1), BrickColor.new("Dark stone grey"), Enum.Material.Metal)
+        elseif itemId == "camioneta" then
+            -- Camioneta 4x4: cabina + caja + ruedas
+            local body = s(Vector3.new(0,0.3,0), Vector3.new(2.5,0.2,2), BrickColor.new("Dark stone grey"))
+            -- Cabina
+            p(Vector3.new(-1,0.9,0), Vector3.new(1.5,1,1.5), BrickColor.new("Bright red"), Enum.Material.Metal)
+            -- Techo
+            p(Vector3.new(-0.8,1.5,0), Vector3.new(0.8,0.1,1), BrickColor.new("Bright red"), Enum.Material.Metal)
+            -- Caja de carga
+            p(Vector3.new(1.2,0.8,0), Vector3.new(1.8,0.8,1.6), BrickColor.new("Bright red"), Enum.Material.Metal)
+            -- Ruedas
+            p(Vector3.new(-1.2,0.2,1.3), Vector3.new(0.3,0.4,0.3), BrickColor.new("Black"))
+            p(Vector3.new(-1.2,0.2,-1.3), Vector3.new(0.3,0.4,0.3), BrickColor.new("Black"))
+            p(Vector3.new(1.2,0.2,1.3), Vector3.new(0.3,0.4,0.3), BrickColor.new("Black"))
+            p(Vector3.new(1.2,0.2,-1.3), Vector3.new(0.3,0.4,0.3), BrickColor.new("Black"))
+            -- Mineral en la caja
+            for _ = 1, 3 do
+                local lx = 1.2 + (math.random() - 0.5) * 1
+                local lz = (math.random() - 0.5) * 1
+                p(Vector3.new(lx, 1.3, lz), Vector3.new(0.3,0.2,0.3), BrickColor.new("Bright orange"))
+            end
+        end
+        m.Parent = padsFolder
+        return m
     end
+    buildPadModel(pos, item.Id)
 
     -- Pad base
     local pad = Instance.new("Part")
