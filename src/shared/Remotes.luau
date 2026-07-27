@@ -16,6 +16,7 @@ local REMOTE_NAMES = {
     "SyncState",
     "IncomeNotify",
     "PurchaseResult",
+    "LevelUp",
 }
 
 local Remotes = {}
