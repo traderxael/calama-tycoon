@@ -160,6 +160,28 @@ local function executePurchase(player, item, pad)
     s.totalIncome = calcIncome(s)
     fireSync(player, s)
     Remotes.GetRemoteEvent("PurchaseResult"):FireClient(player, true, item.Name .. " comprado!")
+
+    -- Update pad visual (green glow, OWNED label)
+    task.spawn(function()
+        local pads = workspace:FindFirstChild("TycoonPads")
+        if not pads then return end
+        local pad = pads:FindFirstChild(item.Id)
+        if not pad then return end
+        pad.BrickColor = BrickColor.new("Bright green")
+        local glow = pads:FindFirstChild("Glow_" .. item.Id)
+        if glow then
+            glow.BrickColor = BrickColor.new("Bright green")
+            glow.Transparency = 0.2
+        end
+        local bb = pad:FindFirstChildWhichIsA("BillboardGui")
+        if bb then
+            local children = bb:GetChildren()
+            if #children >= 2 then
+                children[2].Text = "ADQUIRIDO"
+                children[2].TextColor3 = Color3.fromRGB(80, 255, 80)
+            end
+        end
+    end)
     return true
 end
 
