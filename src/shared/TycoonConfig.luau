@@ -34,7 +34,7 @@ TycoonConfig.SHOP = {
         CostLey = 0,
         Income = 0,
         IncomeInterval = 0,
-        Effect = "unlock_phase",
+        Effect = "terrain",
     },
     {
         Id = "chancador",
@@ -239,7 +239,23 @@ TycoonConfig.ECONOMY = {
     COLECTOR_INTERVAL = 2,
     DISPATCH_COOLDOWN = 2,
     MAX_PURCHASE_DISTANCE = 18,
+    ORE_SELL_PRICE = 8, -- $8 por cada unidad de mineral
+    ORE_PER_DOLLAR = 0.2, -- 1 mineral cada $5 de ingreso
 }
+
+-- Player Levels
+TycoonConfig.LEVELS = {
+    MAX_LEVEL = 50,
+    XP_PER_DOLLAR = 0.2, -- 1 XP cada $5
+    BASE_XP_MULTIPLIER = 50, -- formula: level^2 * this
+    BONUS_PER_LEVEL = 0.02, -- +2% income por nivel
+}
+function TycoonConfig.XPForLevel(level: number): number
+    return level * level * TycoonConfig.LEVELS.BASE_XP_MULTIPLIER
+end
+function TycoonConfig.IncomeMultiplier(level: number): number
+    return 1.0 + (level - 1) * TycoonConfig.LEVELS.BONUS_PER_LEVEL
+end
 
 function TycoonConfig.GetShopItem(id: string): ShopItem?
     for _, item in TycoonConfig.SHOP do
